@@ -17,7 +17,6 @@ export default function Home() {
 
   const generateBlurb = useCallback(async () => {
     setBlurbsFinishedGenerating(false);
-    let done = false;
     let firstPost = false;
     let streamedText = "";
     const response = await fetch("/api/generateBlurb", {
@@ -33,24 +32,13 @@ export default function Home() {
     if (!response.ok) {
       throw new Error(response.statusText);
     }
-    const data = response.body;
-    if (!data) {
-      return;
+    const data = await response.json();
+    console.log("Response was:", JSON.stringify(data));
+    if (!data.choices) {
+      setGeneratingPosts(data.error.message)
+    } else {
+      setGeneratingPosts(data.choices[0].message.content);
     }
-    const reader = data.getReader();
-    const decoder = new TextDecoder();
-    while (!done) {
-      const { value, done: doneReading } = await reader.read();
-      done = doneReading;
-      const chunkValue = decoder.decode(value);
-      streamedText += chunkValue;
-      if (firstPost) {
-        setGeneratingPosts(streamedText);
-      } else {
-        firstPost = streamedText.includes("1.");
-      }
-    }
-    setBlurbsFinishedGenerating(true);
   }, [blurbRef.current]);
 
   return (
